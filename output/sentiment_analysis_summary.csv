@@ -1,0 +1,5 @@
+,closedPnL,closedPnL,closedPnL,closedPnL,closedPnL,is_win,pnl_pct,leverage
+,count,mean,median,sum,std,mean,mean,mean
+Sentiment,,,,,,,,
+Fear,60700,22.256,0.0,1350962.81,88.447,0.417,1.412,1.0
+Greed,49330,22.302,0.0,1100160.247,89.705,0.383,1.949,1.0
