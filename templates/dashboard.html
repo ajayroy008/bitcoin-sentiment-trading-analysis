@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Sentiment Trading Dashboard | Hyperliquid Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary) !important;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: white;
+            margin: 30px 0 20px 0;
+            font-weight: bold;
+        }
+
+        .badge-greed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .badge-fear {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+        }
+
+        footer {
+            background: rgba(0,0,0,0.5);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-chart-line"></i> Bitcoin Sentiment Trading Dashboard
+        </a>
+        <div class="ms-auto">
+            <span class="badge-greed" id="liveSentiment">Loading...</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+
+    <!-- Hero Section -->
+    <div class="text-center text-white mb-5">
+        <h1 class="display-4 fw-bold">Hyperliquid Trader Performance Analysis</h1>
+        <p class="lead">How Fear & Greed Index Affects Trading Outcomes</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row" id="statsContainer">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-value" id="totalTrades">-</div>
+                <div class="stat-label">Total Trades Analyzed</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="stat-value" id="totalPnl">-</div>
+                <div class="stat-label">Total PnL ($)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                <div class="stat-value" id="winRate">-</div>
+                <div class="stat-label">Overall Win Rate</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
+                <div class="stat-value" id="avgLeverage">-</div>
+                <div class="stat-label">Average Leverage</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fear vs Greed Comparison Cards -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="stat-card">
+                <div class="row">
+                    <div class="col-6">
+                        <i class="fas fa-smile-wink" style="font-size: 2rem; color: #10b981;"></i>
+                        <h4 class="mt-2">Greed Markets</h4>
+                        <div class="stat-value" id="greedWinRate">-</div>
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value" id="greedAvgPnl">-</div>
+                        <div class="stat-label">Avg PnL ($)</div>
+                    </div>
+                    <div class="col-6">
+                        <i class="fas fa-frown" style="font-size: 2rem; color: #ef4444;"></i>
+                        <h4 class="mt-2">Fear Markets</h4>
+                        <div class="stat-value" id="fearWinRate">-</div>
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value" id="fearAvgPnl">-</div>
+                        <div class="stat-label">Avg PnL ($)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-chart-pie"></i>
+                        <h4 class="mt-2">Trade Distribution</h4>
+                    </div>
+                    <canvas id="tradeDistributionChart" width="200" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <h3 class="section-title"><i class="fas fa-chart-bar"></i> Performance Analysis</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <canvas id="pnlChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <canvas id="winrateChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualization Image -->
+    <h3 class="section-title"><i class="fas fa-image"></i> Analysis Dashboard</h3>
+    <div class="chart-container text-center">
+        <img id="analysisImage" src="" alt="Sentiment Analysis Results" class="img-fluid rounded">
+    </div>
+
+    <!-- Recent Trades Table -->
+    <h3 class="section-title"><i class="fas fa-table"></i> Recent Trades with Sentiment</h3>
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover" id="tradesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Sentiment</th>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>PnL ($)</th>
+                        <th>PnL %</th>
+                        <th>Leverage</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody id="tradesTableBody">
+                    <tr><td colspan="8" class="text-center">Loading trades...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2026 Bitcoin Sentiment Trading Analysis | Built with Flask & Chart.js</p>
+</footer>
+
+<script>
+    // Load all data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadChartData();
+        loadImage();
+        loadTrades();
+    });
+
+    function loadStats() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalTrades').innerText = stats.total_trades.toLocaleString();
+                    document.getElementById('totalPnl').innerText = '$' + stats.total_pnl.toFixed(2);
+                    document.getElementById('winRate').innerText = stats.win_rate.toFixed(1) + '%';
+                    document.getElementById('avgLeverage').innerText = stats.avg_leverage.toFixed(1) + 'x';
+                    document.getElementById('greedWinRate').innerHTML = stats.greed_win_rate.toFixed(1) + '%';
+                    document.getElementById('fearWinRate').innerHTML = stats.fear_win_rate.toFixed(1) + '%';
+                    document.getElementById('greedAvgPnl').innerHTML = '$' + stats.greed_avg_pnl.toFixed(2);
+                    document.getElementById('fearAvgPnl').innerHTML = '$' + stats.fear_avg_pnl.toFixed(2);
+
+                    // Update live sentiment badge
+                    if (stats.greed_win_rate > stats.fear_win_rate) {
+                        document.getElementById('liveSentiment').innerHTML = '<i class="fas fa-chart-line"></i> Active: Greed Market';
+                        document.getElementById('liveSentiment').className = 'badge-greed';
+                    } else {
+                        document.getElementById('liveSentiment').innerHTML = '<i class="fas fa-chart-line"></i> Active: Fear Market';
+                        document.getElementById('liveSentiment').className = 'badge-fear';
+                    }
+                }
+            });
+    }
+
+    function loadChartData() {
+        fetch('/api/chart-data')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // PnL Chart
+                    const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+                    new Chart(pnlCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Greed', 'Fear'],
+                            datasets: [{
+                                label: 'Average PnL ($)',
+                                data: [
+                                    data.pnl_by_sentiment.mean['Greed'] || 0,
+                                    data.pnl_by_sentiment.mean['Fear'] || 0
+                                ],
+                                backgroundColor: ['#10b981', '#ef4444'],
+                                borderRadius: 10
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' },
+                                title: { display: true, text: 'Average PnL by Sentiment' }
+                            }
+                        }
+                    });
+
+                    // Win Rate Chart
+                    const winrateCtx = document.getElementById('winrateChart').getContext('2d');
+                    new Chart(winrateCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Greed', 'Fear'],
+                            datasets: [{
+                                label: 'Win Rate (%)',
+                                data: [
+                                    data.winrate_by_sentiment['Greed'] * 100 || 0,
+                                    data.winrate_by_sentiment['Fear'] * 100 || 0
+                                ],
+                                backgroundColor: ['#10b981', '#ef4444'],
+                                borderRadius: 10
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' },
+                                title: { display: true, text: 'Win Rate by Sentiment' }
+                            },
+                            scales: {
+                                y: {
+                                    max: 100,
+                                    title: { display: true, text: 'Win Rate (%)' }
+                                }
+                            }
+                        }
+                    });
+
+                    // Trade Distribution Pie Chart
+                    const pieCtx = document.getElementById('tradeDistributionChart').getContext('2d');
+                    new Chart(pieCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Greed', 'Fear'],
+                            datasets: [{
+                                data: [
+                                    data.count_by_sentiment['Greed'] || 0,
+                                    data.count_by_sentiment['Fear'] || 0
+                                ],
+                                backgroundColor: ['#10b981', '#ef4444']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+            });
+    }
+
+    function loadImage() {
+        document.getElementById('analysisImage').src = '/api/image?_=' + new Date().getTime();
+    }
+
+    function loadTrades() {
+        fetch('/api/trades')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    const tbody = document.getElementById('tradesTableBody');
+                    tbody.innerHTML = '';
+
+                    data.data.slice(0, 50).forEach(trade => {
+                        const row = tbody.insertRow();
+                        row.insertCell(0).innerText = trade.trade_date || '-';
+                        row.insertCell(1).innerHTML = trade.Sentiment === 'Greed' ?
+                            '<span class="badge-greed">Greed</span>' :
+                            '<span class="badge-fear">Fear</span>';
+                        row.insertCell(2).innerText = trade.symbol || '-';
+                        row.insertCell(3).innerText = trade.side || '-';
+                        row.insertCell(4).innerText = '$' + (trade.closedPnL || 0).toFixed(2);
+                        row.insertCell(5).innerText = (trade.pnl_pct || 0).toFixed(2) + '%';
+                        row.insertCell(6).innerText = (trade.leverage || 1).toFixed(1) + 'x';
+                        row.insertCell(7).innerHTML = trade.is_win ?
+                            '<i class="fas fa-check-circle text-success"></i> Win' :
+                            '<i class="fas fa-times-circle text-danger"></i> Loss';
+                    });
+                } else {
+                    document.getElementById('tradesTableBody').innerHTML = '<tr><td colspan="8" class="text-center">No trade data available</td></tr>';
+                }
+            });
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        loadStats();
+        loadImage();
+    }, 30000);
+</script>
+
+</body>
+</html>
